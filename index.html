@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html>
 <head>
   <title>Protected Page</title>
@@ -27,6 +27,97 @@
     }
 
     callEdgeFunction();
+  </script>
+</body>
+</html>
+ -->
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Supabase JWT Auth Test</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      padding: 1rem;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    #status {
+      font-size: 1.2rem;
+      margin-top: 1rem;
+      max-width: 600px;
+      text-align: center;
+    }
+    .spinner {
+      border: 4px solid #eee;
+      border-top: 4px solid #007bff;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin-top: 2rem;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Auth Check via Supabase JWT</h1>
+  <div id="status">Waiting for token from FlutterFlow...</div>
+  <div class="spinner"></div>
+
+  <script>
+    const statusDiv = document.getElementById('status')
+
+    window.addEventListener("message", async (event) => {
+      // 🔐 Optional: Replace this with your real FlutterFlow app origin
+      // const allowedOrigin = 'https://your-flutterflow-app.com';
+
+      // Uncomment to enforce origin check:
+      // if (event.origin !== allowedOrigin) {
+      //   statusDiv.innerText = "Untrusted source. Ignoring message.";
+      //   return;
+      // }
+
+      const { type, token } = event.data;
+
+      if (type === "TOKEN" && token) {
+        statusDiv.innerText = "🔄 Authenticating with Supabase Edge Function...";
+
+        try {
+          const res = await fetch("https://jtrenbwpefzevqlkcfly.supabase.co/functions/v1/verify-jwt", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          const text = await res.text();
+          statusDiv.innerText = res.ok ? `✅ ${text}` : `❌ ${text}`;
+        } catch (err) {
+          statusDiv.innerText = `⚠️ Error: ${err.message}`;
+        }
+      } else {
+        statusDiv.innerText = "❌ Invalid token message received.";
+      }
+    }, false);
   </script>
 </body>
 </html>
