@@ -45,6 +45,14 @@
   <script>
     const statusDiv = document.getElementById('status')
 
+      // Simulate receiving the token via postMessage
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (token) {
+      window.postMessage({ type: 'TOKEN', token }, '*');
+    }
+
     window.addEventListener("message", async (event) => {
       // 🔐 Optional: Replace this with your real FlutterFlow app origin
       // const allowedOrigin = 'https://your-flutterflow-app.com';
