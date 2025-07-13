@@ -1,4 +1,56 @@
-<!DOCTYPE html>
+// supabase/functions/verify-jwt/index.ts
+import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const supabase = createClient(
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_ANON_KEY")!
+);
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*", // Or specify your GitHub Pages domain
+  "Access-Control-Allow-Headers": "*",
+};
+
+serve(async (req) => {
+  // Handle preflight request
+  if (req.method === "OPTIONS") {
+    return new Response("OK", {
+      headers: corsHeaders,
+    });
+  }
+
+  const authHeader = req.headers.get("Authorization");
+
+  if (!authHeader?.startsWith("Bearer ")) {
+    return new Response("❌ Missing or invalid Authorization header", {
+      status: 401,
+      headers: corsHeaders,
+    });
+  }
+
+  const token = authHeader.replace("Bearer ", "");
+
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+
+  if (error || !user) {
+    return new Response("❌ Invalid token or user not found", {
+      status: 401,
+      headers: corsHeaders,
+    });
+  }
+
+  return new Response(`User: ${user.email}`, {
+    status: 200,
+    headers: corsHeaders,
+  });
+});
+
+
+
+
+
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -86,48 +138,4 @@
     }, false);
   </script>
 </body>
-</html>
-
-<!-- <!DOCTYPE html>
-<html>
-<head>
-  <title>Protected Page</title>
-</head>
-<body>
-  <h2 id="status">Checking authentication...</h2>
-
-  <script>
-    async function callEdgeFunction() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get('token');
-
-      if (!token) {
-        document.getElementById('status').innerText = 'Missing access token.';
-        return;
-      }
-
-      const response = await fetch('https://jtrenbwpefzevqlkcfly.supabase.co/functions/v1/verify-jwt', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      const text = await response.text();
-      document.getElementById('status').innerText = text;
-    }
-
-    callEdgeFunction();
-  </script>
-</body>
-</html>
- -->
-
-
-
-
-
-
-
-
-
-
+</html> -->
