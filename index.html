@@ -29,6 +29,100 @@
   <script>
     const statusDiv = document.getElementById("status");
 
+    function sendVerificationResult(success, message) {
+      const payload = {
+        type: 'VERIFY_RESULT',
+        success: success,
+        message: message
+      };
+
+      // For Android/iOS WebView
+      if (typeof FlutterFlowChannel !== 'undefined') {
+        try {
+          FlutterFlowChannel.postMessage(JSON.stringify(payload));
+          console.log("✅ Sent via FlutterFlowChannel");
+        } catch (err) {
+          console.warn("⚠️ Failed to post to FlutterFlowChannel:", err);
+        }
+      }
+
+      // For Web iframe
+      try {
+        window.parent.postMessage(payload, '*');
+        console.log("✅ Sent via postMessage to parent");
+      } catch (err) {
+        console.warn("⚠️ Failed to post to parent:", err);
+      }
+    }
+
+    window.addEventListener("message", async (event) => {
+      const { type, token } = event.data;
+
+      if (type === "TOKEN" && token) {
+        statusDiv.innerText = "🔄 Verifying token...";
+
+        try {
+          const res = await fetch("https://jtrenbwpefzevqlkcfly.supabase.co/functions/v1/verify-jwt", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          const text = await res.text();
+          const success = res.ok;
+          const message = success ? `✅ Verified: ${text}` : `❌ Error: ${text}`;
+          statusDiv.innerText = message;
+
+          // Send verification result to Flutter (web or mobile)
+          sendVerificationResult(success, text);
+        } catch (err) {
+          const errorMsg = `⚠️ Error: ${err.message}`;
+          statusDiv.innerText = errorMsg;
+
+          // Notify Flutter with failure
+          sendVerificationResult(false, err.message);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
+
+
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verify JWT</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      padding: 1rem;
+      background-color: #f3f3f3;
+    }
+    #status {
+      font-size: 1.2rem;
+      text-align: center;
+      max-width: 600px;
+    }
+  </style>
+</head>
+<body>
+  <h2>🔐 Supabase JWT Verification</h2>
+  <div id="status">Waiting for token from FlutterFlow...</div>
+
+  <script>
+    const statusDiv = document.getElementById("status");
+
     window.addEventListener("message", async (event) => {
       const { type, token } = event.data;
 
@@ -51,99 +145,10 @@
     });
   </script>
 </body>
-</html>
-
-
-
-
-
-
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Supabase JWT Auth Test</title>
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      padding: 1rem;
-      background-color: #f9f9f9;
-      color: #333;
-    }
-    #status {
-      font-size: 1.2rem;
-      margin-top: 1rem;
-      max-width: 600px;
-      text-align: center;
-    }
-    .spinner {
-      border: 4px solid #eee;
-      border-top: 4px solid #007bff;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin-top: 2rem;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  </style>
-</head>
-<body>
-  <h1>🔐 Auth Check via Supabase JWT</h1>
-  <div id="status">Waiting for token from FlutterFlow...</div>
-  <div class="spinner"></div>
-
-  <script>
-    const statusDiv = document.getElementById('status')
-
-      // Simulate receiving the token via postMessage
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-
-    if (token) {
-      window.postMessage({ type: 'TOKEN', token }, '*');
-    }
-
-    window.addEventListener("message", async (event) => {
-      // 🔐 Optional: Replace this with your real FlutterFlow app origin
-      // const allowedOrigin = 'https://your-flutterflow-app.com';
-
-      // Uncomment to enforce origin check:
-      // if (event.origin !== allowedOrigin) {
-      //   statusDiv.innerText = "Untrusted source. Ignoring message.";
-      //   return;
-      // }
-
-      const { type, token } = event.data;
-
-      if (type === "TOKEN" && token) {
-        statusDiv.innerText = "🔄 Authenticating with Supabase Edge Function...";
-
-        try {
-          const res = await fetch("https://jtrenbwpefzevqlkcfly.supabase.co/functions/v1/verify-jwt", {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          const text = await res.text();
-          statusDiv.innerText = res.ok ? `✅ ${text}` : `❌ ${text}`;
-        } catch (err) {
-          statusDiv.innerText = `⚠️ Error: ${err.message}`;
-        }
-      } else {
-        statusDiv.innerText = "❌ Invalid token message received.";
-      }
-    }, false);
-  </script>
-</body>
 </html> -->
+
+
+
+
+
+
