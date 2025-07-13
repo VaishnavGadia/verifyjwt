@@ -1,50 +1,58 @@
-// supabase/functions/verify-jwt/index.ts
-import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verify JWT</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      padding: 1rem;
+      background-color: #f3f3f3;
+    }
+    #status {
+      font-size: 1.2rem;
+      text-align: center;
+      max-width: 600px;
+    }
+  </style>
+</head>
+<body>
+  <h2>🔐 Supabase JWT Verification</h2>
+  <div id="status">Waiting for token from FlutterFlow...</div>
 
-const supabase = createClient(
-  Deno.env.get("SUPABASE_URL")!,
-  Deno.env.get("SUPABASE_ANON_KEY")!
-);
+  <script>
+    const statusDiv = document.getElementById("status");
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*", // Or specify your GitHub Pages domain
-  "Access-Control-Allow-Headers": "*",
-};
+    window.addEventListener("message", async (event) => {
+      const { type, token } = event.data;
 
-serve(async (req) => {
-  // Handle preflight request
-  if (req.method === "OPTIONS") {
-    return new Response("OK", {
-      headers: corsHeaders,
+      if (type === "TOKEN" && token) {
+        statusDiv.innerText = "🔄 Verifying token...";
+
+        try {
+          const res = await fetch("https://YOUR_PROJECT_ID.supabase.co/functions/v1/verify-jwt", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          const text = await res.text();
+          statusDiv.innerText = res.ok ? `✅ Verified: ${text}` : `❌ Error: ${text}`;
+        } catch (err) {
+          statusDiv.innerText = `⚠️ Error: ${err.message}`;
+        }
+      }
     });
-  }
+  </script>
+</body>
+</html>
 
-  const authHeader = req.headers.get("Authorization");
-
-  if (!authHeader?.startsWith("Bearer ")) {
-    return new Response("❌ Missing or invalid Authorization header", {
-      status: 401,
-      headers: corsHeaders,
-    });
-  }
-
-  const token = authHeader.replace("Bearer ", "");
-
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-
-  if (error || !user) {
-    return new Response("❌ Invalid token or user not found", {
-      status: 401,
-      headers: corsHeaders,
-    });
-  }
-
-  return new Response(`User: ${user.email}`, {
-    status: 200,
-    headers: corsHeaders,
-  });
-});
 
 
 
